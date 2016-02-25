@@ -1,0 +1,16 @@
+/target/
+/log/
+/project/target/
+/project/project/
+*.tmp
+*.keep
+.idea/
+.idea_modules/
+*.log
+/src/main/webapp/assets/
+*.iml
+.history
+*.class
+licensing.info
+/bower_components/
+/src/main/webapp/js/bower/

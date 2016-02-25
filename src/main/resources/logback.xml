@@ -1,0 +1,27 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} [%thread] - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="akkalog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>log/logback.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>log/akka.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} [%thread] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--TRACE	DEBUG	INFO	WARN	ERROR	OFF-->
+    <logger name="code" level="TRACE"/>
+    <logger name="net.liftweb" level="WARN"/>
+    <logger name="bootstrap.liftweb" level="WARN"/>
+    <root level="ERROR">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="akkalog"/>
+    </root>
+</configuration>
