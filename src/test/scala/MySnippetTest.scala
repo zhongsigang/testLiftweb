@@ -7,7 +7,6 @@ import net.liftweb.json
 import net.liftweb.mocks.MockHttpServletRequest
 import net.liftweb.mockweb.MockWeb._
 import net.liftweb.util.Helpers._
-import net.liftweb.util._
 import org.scalatest.{FunSpec, Matchers}
 
 import scala.xml.{Null, Text, UnprefixedAttribute}
@@ -21,17 +20,13 @@ class MySnippet {
 }
 
 class MySnippetTest extends FunSpec with Matchers {
-  val session: LiftSession = new LiftSession("", StringHelpers.randomString(20), Empty)
-
   override protected def withFixture(test: NoArgTest) = {
     // set up your db here
     try {
-      S.initIfUninitted(session) {
-        val user = User(1, "admin", "admin")
-        LoggedUser.set(Some(user))
-
-        test()
-      }
+      // Following code will interfere testS, which is not stackable.
+      // val session: LiftSession = new LiftSession("", StringHelpers.randomString(20), Empty)
+      // S.initIfUninitted(session) { test() }
+      test()
     }
     finally {
       // tear down your db here
@@ -62,20 +57,33 @@ class MySnippetTest extends FunSpec with Matchers {
     }
   }
 
-  describe("test liftweb snippet") {
-    it("should work") {
+  describe("Testing MockWeb") {
+    it("Testing liftweb snippet, which use SessionVar") {
       val xml = <xml:group>
         <div class="name">Name</div>
       </xml:group>
 
-      val snippet = new MySnippet()
-      val output = snippet.showNames(xml)
+      val session = testS("http://foo.com/test") {
+        val user = User(1, "admin", "admin")
+        LoggedUser.set(Some(user))
+        S.session
+      }
 
-      output.text should include("admin")
+      testS("http://foo.com/test", session) {
+        val snippet = new MySnippet()
+        val output = snippet.showNames(xml)
+
+        output.text should include("admin")
+      }
+
+      testS("http://foo.com/test") {
+        val snippet = new MySnippet()
+        val output = snippet.showNames(xml)
+
+        output.text should not include "admin"
+      }
     }
-  }
 
-  describe("test MockWeb") {
     it("Testing a Req instance based on a String URL") {
       testReq("http://foo.com/test/this?a=b&a=c", "/test") {
         req =>
@@ -86,7 +94,7 @@ class MySnippetTest extends FunSpec with Matchers {
 
     it("Testing a Req instance based on a MockHttpServletRequest") {
       import json.JsonDSL._
-      val mockReq = new MockHttpServletRequest("http://foo.com/test/this", "/test")
+      val mockReq = new MockHttpServletRequest("http://foo.com/test/that", "/test")
 
       mockReq.body_=(("name" -> "joe") ~ ("age" -> 35))
       //mockReq.body = ("name" -> "joe") ~ ("age" -> 35) IntelliJ IDEA regard body as property
@@ -96,11 +104,12 @@ class MySnippetTest extends FunSpec with Matchers {
 
       testReq(mockReq) {
         req =>
+          req.uri should be("/that")
           req.json_? should be(true)
       }
     }
 
-    it("process LiftRules.early when configured") {
+    it("Processing LiftRules.early when configured") {
       LiftRulesMocker.devTestLiftRulesInstance.doWith(mockLiftRules) {
         useLiftRules.doWith(true) {
           testReq("http://foo.com/test/this") {
@@ -110,7 +119,7 @@ class MySnippetTest extends FunSpec with Matchers {
       }
     }
 
-    it("process LiftRules stateless rewrites when configured") {
+    it("Processing LiftRules stateless rewrites when configured") {
       LiftRulesMocker.devTestLiftRulesInstance.doWith(mockLiftRules) {
         useLiftRules.doWith(true) {
           testReq("http://foo.com/test/stateless") {
@@ -136,7 +145,7 @@ class MySnippetTest extends FunSpec with Matchers {
       }
     }
 
-    it("process S with stateless rewrites") {
+    it("Processing S with stateless rewrites") {
       LiftRulesMocker.devTestLiftRulesInstance.doWith(mockLiftRules) {
         useLiftRules.doWith(true) {
           testS("http://foo.com/test/stateless") {
@@ -146,7 +155,7 @@ class MySnippetTest extends FunSpec with Matchers {
       }
     }
 
-    it("process S with stateful rewrites") {
+    it("Processing S with stateful rewrites") {
       LiftRulesMocker.devTestLiftRulesInstance.doWith(mockLiftRules) {
         useLiftRules.doWith(true) {
           testS("http://foo.com/test/stateful") {
@@ -156,7 +165,7 @@ class MySnippetTest extends FunSpec with Matchers {
       }
     }
 
-    it("emulate a snippet invocation") {
+    it("Emulating a snippet invocation") {
       testS("http://foo.com/test/stateful") {
         withSnippet("MyWidget.foo", new UnprefixedAttribute("bar", Text("bat"), Null)) {
           S.currentSnippet should be(Full("MyWidget.foo"))
